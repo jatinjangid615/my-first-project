@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Neon Tic Tac Toe</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap">
+<style>
+:root {
+  --bg: #0a0a18; --card: #12122a; --text: #e8ecff; --muted: #8a90b8;
+  --cell: #0d0d22; --cell-hover: #1a1a3a; --x: #ff2e97; --o: #00e5ff;
+  --win: #ffe14d; --border: #2b2b5e;
+  color-scheme: dark;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(255,46,151,.18), transparent 45%),
+    radial-gradient(circle at 80% 90%, rgba(0,229,255,.18), transparent 45%),
+    linear-gradient(rgba(120,120,255,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,120,255,.07) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+  font-family: Orbitron, "Segoe UI", system-ui, sans-serif;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.game {
+  width: 100%; max-width: 400px; background: var(--card);
+  border: 2px solid var(--border); border-radius: 18px; padding: 22px;
+  box-shadow: 0 0 0 1px rgba(0,229,255,.25), 0 0 40px rgba(0,229,255,.15), 0 0 80px rgba(255,46,151,.12);
+}
+h1 {
+  margin: 0 0 16px; font-size: 1.6rem; text-align: center; font-weight: 900;
+  letter-spacing: .12em; text-transform: uppercase;
+  background: linear-gradient(90deg, var(--x), var(--o));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 8px rgba(0,229,255,.45));
+}
+.scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.score {
+  background: var(--cell); border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 4px; text-align: center; transition: box-shadow .2s, border-color .2s;
+}
+.score span { display: block; font-size: .6rem; letter-spacing: .15em; color: var(--muted); text-transform: uppercase; }
+.score b { font-size: 1.5rem; font-weight: 900; }
+.score.x b { color: var(--x); text-shadow: 0 0 10px var(--x); }
+.score.o b { color: var(--o); text-shadow: 0 0 10px var(--o); }
+.score.x.active { border-color: var(--x); box-shadow: 0 0 14px rgba(255,46,151,.6); }
+.score.o.active { border-color: var(--o); box-shadow: 0 0 14px rgba(0,229,255,.6); }
+.status {
+  text-align: center; font-weight: 700; font-size: .85rem; letter-spacing: .12em;
+  text-transform: uppercase; margin-bottom: 14px; min-height: 1.6em;
+}
+.status.X { color: var(--x); text-shadow: 0 0 10px var(--x); }
+.status.O { color: var(--o); text-shadow: 0 0 10px var(--o); }
+.status.over { color: var(--win); text-shadow: 0 0 12px var(--win); animation: blink 1s infinite; }
+.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cell {
+  aspect-ratio: 1; border: 2px solid var(--border); border-radius: 12px; background: var(--cell);
+  font-family: inherit; font-size: clamp(2.2rem, 11vw, 3.4rem); font-weight: 900;
+  cursor: pointer; color: var(--text); transition: background .15s, border-color .15s, box-shadow .15s, transform .1s;
+}
+.cell:hover:not(:disabled) { background: var(--cell-hover); border-color: var(--o); box-shadow: 0 0 12px rgba(0,229,255,.35); }
+.cell:active:not(:disabled) { transform: scale(.95); }
+.cell:disabled { cursor: default; }
+.cell.X { color: var(--x); text-shadow: 0 0 14px var(--x), 0 0 28px var(--x); animation: pop .25s ease-out; }
+.cell.O { color: var(--o); text-shadow: 0 0 14px var(--o), 0 0 28px var(--o); animation: pop .25s ease-out; }
+.cell.win { border-color: var(--win); background: rgba(255,225,77,.1); box-shadow: 0 0 18px var(--win), inset 0 0 14px rgba(255,225,77,.25); animation: pulse .9s ease-in-out infinite; }
+.cell:focus-visible, .btn:focus-visible { outline: 3px solid var(--win); outline-offset: 2px; }
+.actions { display: flex; gap: 8px; margin-top: 18px; }
+.btn {
+  flex: 1; padding: 12px 6px; border-radius: 10px; border: 2px solid var(--o);
+  background: transparent; color: var(--o); font-family: inherit; font-weight: 700;
+  font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; cursor: pointer;
+  transition: background .15s, box-shadow .15s, color .15s;
+}
+.btn:hover { background: var(--o); color: #04121a; box-shadow: 0 0 16px var(--o); }
+.btn.alt { border-color: var(--x); color: var(--x); }
+.btn.alt:hover { background: var(--x); color: #1a0410; box-shadow: 0 0 16px var(--x); }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes pulse { 50% { box-shadow: 0 0 28px var(--win), inset 0 0 20px rgba(255,225,77,.4); } }
+@keyframes blink { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useRef } = React;
+const h = React.createElement;
+const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+function calc(sq) {
+  for (const [a, b, c] of LINES) {
+    if (sq[a] && sq[a] === sq[b] && sq[a] === sq[c]) return { winner: sq[a], line: [a, b, c] };
+  }
+  return { winner: null, line: [] };
+}
+
+function Cell({ value, onClick, win, disabled, index }) {
+  return h('button', {
+    className: 'cell ' + (value || '') + (win ? ' win' : ''),
+    onClick, disabled,
+    'aria-label': 'Cell ' + (index + 1) + (value ? ', ' + value : ', empty')
+  }, value);
+}
+
+function App() {
+  const [squares, setSquares] = useState(Array(9).fill(null));
+  const [turn, setTurn] = useState('X');
+  const [starter, setStarter] = useState('X');
+  const [scores, setScores] = useState({ X: 0, O: 0, D: 0 });
+  const timer = useRef(null);
+
+  const { winner, line } = calc(squares);
+  const draw = !winner && squares.every(Boolean);
+  const over = !!winner || draw;
+
+  function play(i) {
+    if (squares[i] || winner) return;
+    const next = squares.slice();
+    next[i] = turn;
+    setSquares(next);
+    const r = calc(next);
+    if (r.winner) setScores(s => ({ ...s, [r.winner]: s[r.winner] + 1 }));
+    else if (next.every(Boolean)) {
+      setScores(s => ({ ...s, D: s.D + 1 }));
+      const nextStarter = starter === 'X' ? 'O' : 'X';
+      timer.current = setTimeout(() => {
+        setStarter(nextStarter); setTurn(nextStarter); setSquares(Array(9).fill(null));
+      }, 1500);
+    }
+    else setTurn(turn === 'X' ? 'O' : 'X');
+  }
+
+  function newGame() {
+    clearTimeout(timer.current);
+    const s = starter === 'X' ? 'O' : 'X';
+    setStarter(s); setTurn(s); setSquares(Array(9).fill(null));
+  }
+
+  function resetAll() {
+    clearTimeout(timer.current);
+    setScores({ X: 0, O: 0, D: 0 });
+    setStarter('X'); setTurn('X'); setSquares(Array(9).fill(null));
+  }
+
+  const status = winner ? 'Victory — player ' + winner + ' wins!'
+    : draw ? 'Draw — new game starting…'
+    : 'Player ' + turn + ' — your move';
+
+  return h('main', { className: 'game' },
+    h('h1', null, 'Tic Tac Toe'),
+    h('div', { className: 'scores' },
+      h('div', { className: 'score x' + (!over && turn === 'X' ? ' active' : '') }, h('span', null, 'Player X'), h('b', null, scores.X)),
+      h('div', { className: 'score' }, h('span', null, 'Draws'), h('b', null, scores.D)),
+      h('div', { className: 'score o' + (!over && turn === 'O' ? ' active' : '') }, h('span', null, 'Player O'), h('b', null, scores.O))
+    ),
+    h('div', { className: 'status ' + (over ? 'over' : turn), role: 'status', 'aria-live': 'polite' }, status),
+    h('div', { className: 'board' },
+      squares.map((v, i) => h(Cell, {
+        key: i, index: i, value: v, win: line.includes(i),
+        disabled: !!v || !!winner, onClick: () => play(i)
+      }))
+    ),
+    h('div', { className: 'actions' },
+      h('button', { className: 'btn', onClick: newGame }, 'New game'),
+      h('button', { className: 'btn alt', onClick: resetAll }, 'Reset scores')
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>
